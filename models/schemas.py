@@ -245,7 +245,7 @@ class CompetitorAnalysisResult(BaseModel):
 
 
 class AIWriterRequest(BaseModel):
-    competitor_urls: List[str]              # 1-5 competitor article URLs to analyze
+    competitor_urls: List[str] = []         # 0-5 competitor article URLs to analyze (optional)
     topic_prompt: str                        # e.g. "Write a guide on how RAG works for production engineers"
     target_keywords: Optional[List[str]] = None
     content_type: Optional[ContentType] = None

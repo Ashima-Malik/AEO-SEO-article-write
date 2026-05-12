@@ -41,8 +41,8 @@ export const api = {
   generateBrief: (keyword: string, contentType?: string) =>
     apiCall<any>("/keywords/brief", { method: "POST", body: JSON.stringify({ primary_keyword: keyword, content_type: contentType }) }),
 
-  writeArticle: (competitorUrls: string[], targetKeyword: string, topicPrompt?: string, userTone?: string) =>
-    apiCall<any>("/writer/create", { method: "POST", body: JSON.stringify({ competitor_urls: competitorUrls, target_keyword: targetKeyword, topic_prompt: topicPrompt, user_tone_prompt: userTone }) }),
+  writeArticle: (competitorUrls: string[], targetKeywords: string[], topicPrompt?: string, userTone?: string) =>
+    apiCall<any>("/writer/create", { method: "POST", body: JSON.stringify({ competitor_urls: competitorUrls, target_keywords: targetKeywords.length ? targetKeywords : undefined, topic_prompt: topicPrompt, user_tone_prompt: userTone }) }),
 
   compareUrls: (yourUrl: string, competitorUrl: string) =>
     apiCall<any>("/compare", { method: "POST", body: JSON.stringify({ your_url: yourUrl, competitor_url: competitorUrl }) }),

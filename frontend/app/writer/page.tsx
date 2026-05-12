@@ -4,7 +4,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { TopBar } from "@/components/layout/TopBar";
 import { PageLoader } from "@/components/ui/LoadingSpinner";
 import { api } from "@/lib/api";
-import { PenTool, Plus, X, Copy, Check } from "lucide-react";
+import { PenTool, Plus, X, Copy, Check, Tag, Clock, Zap } from "lucide-react";
 
 export default function WriterPage() {
   const [topic, setTopic]           = useState("");
@@ -23,28 +23,38 @@ export default function WriterPage() {
   function setUrl(i: number, val: string) { setUrls(u => u.map((v, idx) => idx === i ? val : v)); }
 
   async function handleWrite() {
+    if (!topic.trim()) { setError("Please enter a topic."); return; }
     const validUrls = competitorUrls.filter(u => u.trim());
     const kwList = keywords.split(",").map(k => k.trim()).filter(Boolean);
-    if (!topic) { setError("Please enter a topic."); return; }
     setLoading(true); setError(""); setResult(null);
     try {
-      const data = await api.writeArticle(validUrls, kwList[0] || topic, topic, tone || undefined);
+      const data = await api.writeArticle(validUrls, kwList, topic, tone || undefined);
       setResult(data);
     } catch (e: any) { setError(e.message || "Write failed."); }
     finally { setLoading(false); }
   }
 
   async function handleCopy() {
-    if (!result?.content) return;
-    await navigator.clipboard.writeText(result.content);
+    const text = result?.written_content;
+    if (!text) return;
+    await navigator.clipboard.writeText(text);
     setCopied(true); setTimeout(() => setCopied(false), 2000);
   }
 
-  if (loading) return <AppLayout><TopBar title="AI Writer" /><PageLoader message="Researching competitors + writing optimized article..." /></AppLayout>;
+  if (loading) return (
+    <AppLayout>
+      <TopBar title="AI Writer" />
+      <PageLoader message={
+        competitorUrls.filter(u => u.trim()).length > 0
+          ? "Analyzing competitors + writing optimized article..."
+          : "Writing optimized article..."
+      } />
+    </AppLayout>
+  );
 
   return (
     <AppLayout>
-      <TopBar title="AI Writer" subtitle="Analyze competitors, then write an article that beats them" />
+      <TopBar title="AI Writer" subtitle="Write an SEO-optimized article — add competitor URLs for a gap analysis boost" />
       <div style={{ padding: "28px 32px", maxWidth: "800px" }}>
 
         <div style={{ ...card, padding: "26px", marginBottom: "24px", display: "flex", flexDirection: "column", gap: "20px" }}>
@@ -59,14 +69,16 @@ export default function WriterPage() {
 
           <div>
             <label style={{ display: "block", fontSize: "16px", fontWeight: 600, color: "#334155", marginBottom: "9px" }}>
-              Target Keywords <span style={{ color: "#94A3B8", fontWeight: 400 }}>(comma-separated)</span>
+              Target Keywords <span style={{ color: "#94A3B8", fontWeight: 400 }}>(optional, comma-separated)</span>
             </label>
             <input value={keywords} onChange={e => setKeywords(e.target.value)} placeholder="AI product manager, PM skills, AI PM salary" className="rr-input" />
           </div>
 
           <div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-              <label style={{ fontSize: "16px", fontWeight: 600, color: "#334155" }}>Competitor URLs <span style={{ color: "#94A3B8", fontWeight: 400 }}>(optional — paste 2–4 top-ranking pages)</span></label>
+              <label style={{ fontSize: "16px", fontWeight: 600, color: "#334155" }}>
+                Competitor URLs <span style={{ color: "#94A3B8", fontWeight: 400 }}>(optional — paste top-ranking pages)</span>
+              </label>
               <button onClick={addUrl} style={{ background: "none", border: "none", cursor: "pointer", color: "#7C3AED", fontSize: "15px", fontWeight: 500, display: "flex", alignItems: "center", gap: "5px" }}>
                 <Plus size={16} /> Add URL
               </button>
@@ -90,28 +102,77 @@ export default function WriterPage() {
           </div>
 
           <div>
-            <label style={{ display: "block", fontSize: "16px", fontWeight: 600, color: "#334155", marginBottom: "9px" }}>Tone Instructions <span style={{ color: "#94A3B8", fontWeight: 400 }}>(optional)</span></label>
+            <label style={{ display: "block", fontSize: "16px", fontWeight: 600, color: "#334155", marginBottom: "9px" }}>
+              Tone Instructions <span style={{ color: "#94A3B8", fontWeight: 400 }}>(optional)</span>
+            </label>
             <input value={tone} onChange={e => setTone(e.target.value)} placeholder="e.g. Expert but approachable, first-person, include personal anecdotes" className="rr-input" />
           </div>
 
-          {error && <p style={{ fontSize: "15px", color: "#DC2626" }}>{error}</p>}
+          {error && (
+            <div style={{ background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: "10px", padding: "12px 16px", fontSize: "14px", color: "#DC2626" }}>
+              {error}
+            </div>
+          )}
 
-          <button onClick={handleWrite} disabled={!topic} className="btn-primary" style={{ justifyContent: "center", fontSize: "16px", padding: "14px" }}>
+          <button onClick={handleWrite} disabled={!topic.trim()} className="btn-primary" style={{ justifyContent: "center", fontSize: "16px", padding: "14px" }}>
             <PenTool size={18} /> Write Optimized Article
           </button>
         </div>
 
-        {result?.content && (
+        {result?.written_content && (
           <div style={{ ...card, overflow: "hidden" }}>
-            <div style={{ padding: "14px 20px", borderBottom: "1px solid #E2E8F0", display: "flex", alignItems: "center", gap: "10px" }}>
+            {/* Header */}
+            <div style={{ padding: "16px 20px", borderBottom: "1px solid #E2E8F0", display: "flex", alignItems: "center", gap: "10px" }}>
               <p style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 700, fontSize: "17px", flex: 1 }}>Generated Article</p>
               <button onClick={handleCopy} className="btn-secondary" style={{ padding: "7px 16px", fontSize: "14px" }}>
                 {copied ? <Check size={15} color="#10B981" /> : <Copy size={15} />}
                 {copied ? "Copied!" : "Copy"}
               </button>
             </div>
+
+            {/* Meta tags strip */}
+            {(result.suggested_title_tag || result.suggested_meta_description || result.suggested_url_slug) && (
+              <div style={{ padding: "14px 20px", borderBottom: "1px solid #E2E8F0", background: "#F8FAFC", display: "flex", flexDirection: "column", gap: "8px" }}>
+                {result.suggested_title_tag && (
+                  <div style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
+                    <span style={{ fontSize: "12px", fontWeight: 700, color: "#7C3AED", background: "#F5F3FF", padding: "2px 8px", borderRadius: "6px", flexShrink: 0, marginTop: "2px" }}>TITLE</span>
+                    <span style={{ fontSize: "14px", color: "#334155" }}>{result.suggested_title_tag}</span>
+                  </div>
+                )}
+                {result.suggested_meta_description && (
+                  <div style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
+                    <span style={{ fontSize: "12px", fontWeight: 700, color: "#3B82F6", background: "#EFF6FF", padding: "2px 8px", borderRadius: "6px", flexShrink: 0, marginTop: "2px" }}>META</span>
+                    <span style={{ fontSize: "14px", color: "#334155" }}>{result.suggested_meta_description}</span>
+                  </div>
+                )}
+                {result.suggested_url_slug && (
+                  <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                    <span style={{ fontSize: "12px", fontWeight: 700, color: "#10B981", background: "#F0FDF4", padding: "2px 8px", borderRadius: "6px", flexShrink: 0 }}>SLUG</span>
+                    <span style={{ fontSize: "14px", color: "#334155", fontFamily: "'JetBrains Mono', monospace" }}>{result.suggested_url_slug}</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Stats strip */}
+            <div style={{ padding: "10px 20px", borderBottom: "1px solid #E2E8F0", display: "flex", gap: "20px", background: "#FAFAFA" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", color: "#64748B" }}>
+                <Tag size={13} color="#94A3B8" />
+                {result.target_keywords?.length > 0 ? result.target_keywords.join(" · ") : "No keywords"}
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", color: "#64748B" }}>
+                <Clock size={13} color="#94A3B8" />
+                {result.processing_time_seconds}s
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", color: "#64748B" }}>
+                <Zap size={13} color="#94A3B8" />
+                {result.agents_used?.join(" → ")}
+              </div>
+            </div>
+
+            {/* Article body */}
             <div style={{ padding: "32px 40px", maxHeight: "70vh", overflowY: "auto", lineHeight: 1.8, fontSize: "16px", color: "#475569", whiteSpace: "pre-wrap" }}>
-              {result.content}
+              {result.written_content}
             </div>
           </div>
         )}

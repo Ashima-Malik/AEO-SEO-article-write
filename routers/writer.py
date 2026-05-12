@@ -31,8 +31,6 @@ async def create_article(
     - **user_tone_prompt**: Optional tone/style instructions for the writer
     """
     # Validate URL count
-    if not request.competitor_urls:
-        raise HTTPException(status_code=422, detail="At least one competitor URL is required.")
     if len(request.competitor_urls) > 5:
         raise HTTPException(status_code=422, detail="Maximum 5 competitor URLs allowed per request.")
 
