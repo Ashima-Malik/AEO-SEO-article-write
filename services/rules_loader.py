@@ -7,7 +7,6 @@ and retrieved on every analysis call.
 import re
 from typing import Optional
 from functools import lru_cache
-from supabase import create_client, Client
 from config import get_settings
 
 # The full SEO rules extracted from AI-SEO-Strategy-Complete.docx
@@ -184,8 +183,9 @@ DEFAULT_SEO_RULES = """
 
 
 def get_rules_from_db() -> Optional[str]:
-    """Fetch active SEO rules from Supabase."""
+    """Fetch active SEO rules from Supabase (skipped if supabase not installed)."""
     try:
+        from supabase import create_client, Client
         settings = get_settings()
         client: Client = create_client(settings.supabase_url, settings.supabase_service_key)
         result = client.table("seo_rules").select("content").eq("is_active", True).order("created_at", desc=True).limit(1).execute()
