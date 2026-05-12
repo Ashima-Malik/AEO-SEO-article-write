@@ -1,105 +1,142 @@
-# SEO Analyzer — Python FastAPI Backend
+# RankReady — AI-Powered SEO & AEO Platform
 
-AI-powered SEO analysis engine using a 5-agent pipeline built on Claude.
+RankReady is a full-stack AI platform for SEO analysis, content optimization, and Answer Engine Optimization (AEO). It combines a FastAPI backend with a multi-agent GPT-4o pipeline and a Next.js 14 frontend.
+
+---
+
+## What It Does
+
+### SEO Tools
+
+**SEO Analyzer**
+Paste text, upload a document, or provide a URL. The 5-agent pipeline analyzes the content, scores it against a 100-point SEO rubric, rewrites it with web-researched optimizations, and validates the improvement. Output includes a before/after score, tracked changes with rule citations, and a downloadable optimized document.
+
+**Site Audit**
+Enter any URL to get a structured audit of on-page SEO issues — title tags, meta descriptions, heading hierarchy, link structure, and technical signals.
+
+**Keywords**
+Enter a topic to generate a keyword cluster (primary + secondary + long-tail keywords) and a full content brief with recommended article structure, target audience, and coverage requirements.
+
+**AI Writer**
+Provide a topic, optional target keywords, optional competitor URLs, and a tone instruction. The pipeline analyzes competitor content for gaps, then writes a fully SEO-optimized article with suggested title tag, meta description, and URL slug.
+
+**Compare**
+Enter your URL and a competitor URL. The comparison agent analyzes both and identifies where the competitor outperforms you — content depth, keyword coverage, structure, and readability.
+
+### AEO Tools (Answer Engine Optimization)
+
+**AEO Audit**
+Scores content for AI-discoverability — how likely it is to be cited by ChatGPT, Perplexity, or Google AI Overviews. Covers fact density, entity clarity, question-answer structure, and source credibility signals.
+
+**Citation Tracker**
+Analyze a URL for citation potential. Identifies which claims are citable, which entities are well-defined, and what's missing for AI engines to confidently reference the content.
+
+**Query Planner**
+Given a topic and optional keywords, generates a structured plan of the queries users ask AI engines — mapped to content types, intent clusters, and recommended answer formats.
 
 ---
 
 ## Architecture
 
 ```
-seo-backend/
-├── main.py                     # FastAPI app entry point
-├── config.py                   # Settings, env vars, tier limits
+rankready/
+├── main.py                      # FastAPI app entry point
+├── config.py                    # Settings (OPENAI_API_KEY, CORS)
 ├── requirements.txt
-├── .env.example                # Copy to .env and fill in
-├── supabase_schema.sql         # Run this in Supabase SQL Editor
+├── .env                         # Local environment variables (not committed)
 │
-├── agents/                     # The 5 AI agents
-│   ├── extractor.py            # Agent 1: Parse + classify content
-│   ├── scorer.py               # Agent 2: 100-point SEO score
-│   ├── rewriter.py             # Agent 3: Optimize content
-│   ├── validator.py            # Agent 4: Re-score optimized version
-│   └── url_auditor.py          # Agent 5: URL + link audit
+├── agents/                      # 15 GPT-4o agents
+│   ├── extractor.py             # Classifies content type + detects keyword
+│   ├── scorer.py                # 100-point SEO rubric scorer
+│   ├── rewriter.py              # Section-based rewriter with web research
+│   ├── validator.py             # Re-scores optimized content
+│   ├── url_auditor.py           # URL structure + link ecosystem audit
+│   ├── competitor_analyzer.py   # Fetches + analyzes competitor URLs
+│   ├── ai_writer.py             # Writes SEO-optimized articles
+│   ├── keyword_clusterer.py     # Keyword clustering + content brief
+│   ├── comparison_agent.py      # Side-by-side URL comparison
+│   ├── audit_recommender.py     # Site audit recommendations
+│   ├── brief_writer.py          # Content brief generation
+│   ├── aeo_scorer.py            # AEO discoverability scoring
+│   ├── aeo_citation_auditor.py  # Citation potential analysis
+│   ├── citable_claims_agent.py  # Identifies citable claims
+│   ├── entity_mapper.py         # Entity recognition + mapping
+│   ├── fact_density_auditor.py  # Fact density analysis
+│   └── query_planner.py         # AI query planning
 │
-├── services/                   # Supporting services
-│   ├── pipeline.py             # Orchestrates all 5 agents
-│   ├── document.py             # Extract from .docx, text, URL
-│   ├── rules_loader.py         # Load SEO rules from DB / fallback
-│   ├── diff_generator.py       # Side-by-side diff generation
-│   ├── docx_writer.py          # Write optimized .docx for download
-│   └── auth.py                 # Supabase JWT + usage tracking
+├── services/
+│   ├── pipeline.py              # Orchestrates the 5-agent SEO pipeline
+│   ├── writer_pipeline.py       # Orchestrates the AI writer pipeline
+│   ├── document.py              # Extracts content from .docx, text, URL
+│   ├── diff_generator.py        # Generates tracked changes between versions
+│   ├── docx_writer.py           # Writes optimized .docx for download
+│   ├── token_tracker.py         # Token counting + cost estimation
+│   └── rules_loader.py          # Loads SEO rules (DB or local fallback)
 │
 ├── models/
-│   └── schemas.py              # All Pydantic request/response models
+│   └── schemas.py               # All Pydantic request/response models
 │
-└── routers/
-    ├── analysis.py             # POST /analyze/* endpoints
-    ├── billing.py              # Stripe subscription endpoints
-    └── admin.py                # Admin rules management
+├── routers/
+│   ├── analysis.py              # POST /analyze/* endpoints
+│   ├── writer.py                # POST /writer/create
+│   ├── compare.py               # POST /compare
+│   ├── audit.py                 # POST /audit
+│   ├── keywords.py              # POST /keywords/cluster, /keywords/brief
+│   ├── aeo.py                   # POST /aeo/*
+│   ├── editor.py                # POST /editor/*
+│   ├── export.py                # GET /analyze/{id}/download
+│   ├── admin.py                 # Admin rules management
+│   └── billing.py               # Stripe integration (optional)
+│
+└── frontend/                    # Next.js 14 app
+    ├── app/
+    │   ├── page.tsx             # Home page
+    │   ├── analyzer/            # SEO Analyzer
+    │   ├── audit/               # Site Audit
+    │   ├── keywords/            # Keyword Research
+    │   ├── writer/              # AI Writer
+    │   ├── compare/             # URL Comparison
+    │   └── aeo/                 # AEO tools
+    ├── components/
+    │   ├── layout/              # AppLayout, TopBar, Sidebar
+    │   └── ui/                  # Shared UI components
+    └── lib/
+        └── api.ts               # Typed API client
 ```
 
 ---
 
-## The 5-Agent Pipeline
+## The 5-Agent SEO Pipeline
 
 ```
-Input (doc/url/text)
-        ↓
-[Agent 1: Extractor]   → Detects content type, keyword, structure
-        ↓
-[Agent 2: Scorer]      → Scores against 100-point rubric (parallel with Agent 5)
-[Agent 5: URL Auditor] → Audits URL structure and link ecosystem
-        ↓
-[Agent 3: Rewriter]    → Produces SEO-optimized version
-        ↓
-[Agent 4: Validator]   → Re-scores optimized content, confirms improvement
-        ↓
-Response (scores, diff, optimized content, download)
+Input (URL / text / .docx)
+           │
+   [Agent 1: Extractor]      Detects content type, primary keyword, structure
+           │
+   [Agent 2: Scorer]    ─┐   Scores against 100-point SEO rubric
+   [Agent 5: URL Auditor]┘   Audits URL structure and links (parallel)
+           │
+   [Agent 3: Rewriter]       Section-based rewrite with live web research
+           │                 (7 parallel GPT-4o calls per article)
+   [Agent 4: Validator]      Re-scores optimized content, confirms improvement
+           │
+   Response: scores, tracked changes, optimized content, download link
 ```
 
 ---
 
-## Setup — Local Development
+## The AI Writer Pipeline
 
-### 1. Clone and install dependencies
-
-```bash
-cd seo-backend
-python -m venv venv
-source venv/bin/activate         # Windows: venv\Scripts\activate
-pip install -r requirements.txt
 ```
-
-### 2. Set up environment variables
-
-```bash
-cp .env.example .env
-# Edit .env with your actual values
+Input (topic + optional competitor URLs + keywords + tone)
+           │
+   [Competitor Analyzer]     Fetches + analyzes competitor pages for gaps
+   (skipped if no URLs)
+           │
+   [AI Writer]               Writes full SEO-optimized article
+           │
+   Response: article, title tag, meta description, URL slug, agents used
 ```
-
-Required values in `.env`:
-```
-ANTHROPIC_API_KEY=        # Get from console.anthropic.com
-SUPABASE_URL=             # Your Supabase project URL
-SUPABASE_SERVICE_KEY=     # Service role key (not anon key!)
-SUPABASE_JWT_SECRET=      # From Supabase > Settings > API
-STRIPE_SECRET_KEY=        # From Stripe dashboard
-STRIPE_WEBHOOK_SECRET=    # From Stripe > Webhooks
-```
-
-### 3. Set up Supabase database
-
-1. Go to your Supabase project → SQL Editor
-2. Copy the contents of `supabase_schema.sql`
-3. Run it
-
-### 4. Run the server
-
-```bash
-uvicorn main:app --reload --port 8000
-```
-
-API docs available at: http://localhost:8000/docs
 
 ---
 
@@ -108,114 +145,94 @@ API docs available at: http://localhost:8000/docs
 ### Analysis
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/analyze/document` | Upload .docx/.txt for analysis |
-| POST | `/analyze/url` | Analyze content from a URL |
 | POST | `/analyze/text` | Analyze pasted text |
-| GET | `/analyze/{id}` | Retrieve previous analysis |
+| POST | `/analyze/url` | Analyze content from a URL |
+| POST | `/analyze/document` | Upload .docx/.txt for analysis |
+| GET | `/analyze/{id}` | Retrieve a previous analysis |
 | GET | `/analyze/history/all` | Paginated analysis history |
 | GET | `/analyze/{id}/download` | Download optimized .docx |
 
-### Billing
+### SEO Tools
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/billing/checkout` | Create Stripe checkout |
-| POST | `/billing/portal` | Open Stripe customer portal |
-| POST | `/billing/webhook` | Stripe webhook handler |
-| GET | `/billing/status` | Usage and plan status |
+| POST | `/writer/create` | Write an SEO-optimized article |
+| POST | `/compare` | Compare two URLs |
+| POST | `/audit` | Run a site audit |
+| POST | `/keywords/cluster` | Generate keyword cluster |
+| POST | `/keywords/brief` | Generate content brief |
 
-### Admin
+### AEO Tools
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/admin/rules` | Upload new SEO rules version |
-| GET | `/admin/rules` | Get current active rules |
-| GET | `/admin/rules/history` | All rule versions |
-| GET | `/admin/stats` | Platform usage stats |
+| POST | `/aeo/full-audit` | Full AEO audit |
+| POST | `/aeo/score` | AEO discoverability score |
+| POST | `/aeo/citation-audit` | Citation potential analysis |
+| POST | `/aeo/citable-claims` | Extract citable claims |
+| POST | `/aeo/entity-map` | Entity mapping |
+| POST | `/aeo/fact-density` | Fact density analysis |
+| POST | `/aeo/query-plan` | AI query planning |
 
 ---
 
-## Deployment — Railway (Recommended)
+## Setup
 
-Railway is the easiest option for deploying a Python FastAPI app.
+### Requirements
+- Python 3.10+
+- Node.js 18+
+- OpenAI API key
 
-### 1. Create a Railway account
-Go to railway.app → New Project → Deploy from GitHub
-
-### 2. Create a `Procfile`
-
-```
-web: uvicorn main:app --host 0.0.0.0 --port $PORT
-```
-
-### 3. Add environment variables
-In Railway dashboard → Variables → add all values from `.env.example`
-
-### 4. Deploy
-Push to your GitHub repo → Railway auto-deploys
-
-Your API will be live at: `https://your-app.railway.app`
-
----
-
-## Deployment — Render (Alternative)
-
-1. Go to render.com → New Web Service
-2. Connect your GitHub repo
-3. Set:
-   - Build command: `pip install -r requirements.txt`
-   - Start command: `uvicorn main:app --host 0.0.0.0 --port $PORT`
-4. Add environment variables
-5. Deploy
-
----
-
-## Stripe Webhook Setup
-
-After deploying, configure your Stripe webhook:
-
-1. Stripe Dashboard → Developers → Webhooks → Add endpoint
-2. URL: `https://your-api-url.com/billing/webhook`
-3. Events to listen for:
-   - `checkout.session.completed`
-   - `customer.subscription.updated`
-   - `customer.subscription.deleted`
-   - `invoice.paid`
-4. Copy the webhook secret → add to `.env` as `STRIPE_WEBHOOK_SECRET`
-
----
-
-## Subscription Tiers
-
-| Tier | Price | Analyses/month | Stripe Price ID |
-|------|-------|---------------|-----------------|
-| Starter | $29/mo | 20 | `STRIPE_STARTER_PRICE_ID` |
-| Pro | $79/mo | 100 | `STRIPE_PRO_PRICE_ID` |
-| Agency | $199/mo | Unlimited | `STRIPE_AGENCY_PRICE_ID` |
-
-Create these products in Stripe Dashboard → Products → Add product.
-
----
-
-## Updating SEO Rules
-
-To update your SEO rules after deployment:
+### Backend
 
 ```bash
-curl -X POST https://your-api.com/admin/rules \
-  -H "X-Admin-Key: your_admin_key" \
-  -H "Content-Type: application/json" \
-  -d '{"rules_markdown": "# Your updated rules...", "version_note": "Feb 2026 update"}'
+cd seo
+python -m venv myenv
+source myenv/bin/activate        # Windows: myenv\Scripts\activate
+pip install -r requirements.txt
 ```
 
-Or use the Next.js admin panel (in the frontend codebase).
+Create `.env`:
+```
+OPENAI_API_KEY=your_key_here
+```
+
+Start the server:
+```bash
+uvicorn main:app --reload --port 8000
+```
+
+API docs: http://localhost:8000/docs
+
+### Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+App runs at: http://localhost:3000
 
 ---
 
-## Next Steps
+**Render:**
+- Build command: `pip install -r requirements.txt`
+- Start command: `uvicorn main:app --host 0.0.0.0 --port $PORT`
+- Add `OPENAI_API_KEY` in environment variables
 
-1. ✅ Backend (this repo)
-2. ⬜ Next.js frontend — UI with upload, score, diff, editor, download
-3. ⬜ Supabase auth setup (email/password + magic link)
-4. ⬜ Stripe products and price IDs
-5. ⬜ Deploy backend to Railway/Render
-6. ⬜ Deploy frontend to Vercel
-7. ⬜ Configure Stripe webhook with live URL
+
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|------------|
+| Backend | FastAPI (Python 3.10) |
+| AI Model | OpenAI GPT-4o / GPT-4o-search-preview |
+| Frontend | Next.js 14 (App Router) |
+| Styling | Inline styles + CSS modules |
+| Icons | Lucide React |
+| Font | Plus Jakarta Sans |
+
+
+---
+
+Built by [Ashima Malik, Ph.D](https://www.linkedin.com/in/ashima-malik-ph-d-10740711a/)
